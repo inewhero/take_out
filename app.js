@@ -17,6 +17,7 @@ const META = {
 
 const MISSING_COLUMN_INDEX = -1;
 const PROGRESS_UPDATE_ROW_INTERVAL = 20000;
+const ENGINE_ON_THRESHOLD = 20;
 
 const FIELD_META = {
   airspeed: { label: '空速', unit: 'kt', digits: 1 },
@@ -28,11 +29,11 @@ const FIELD_META = {
 };
 
 const CONTROL_META = {
-  aileron: { label: '副翼', unit: '', digits: 2 },
-  elevator: { label: '升降舵', unit: '', digits: 2 },
+  wheelLocal: { label: '驾驶盘滚转 (Local)', unit: '', digits: 2 },
+  columnLocal: { label: '驾驶杆俯仰 (Local)', unit: '', digits: 2 },
+  wheelForeign: { label: '驾驶盘滚转 (Foreign)', unit: '', digits: 2 },
+  columnForeign: { label: '驾驶杆俯仰 (Foreign)', unit: '', digits: 2 },
   rudder: { label: '方向舵', unit: '', digits: 2 },
-  eng1N1: { label: 'ENG1 N1', unit: '%', digits: 1 },
-  eng2N1: { label: 'ENG2 N1', unit: '%', digits: 1 },
 };
 
 const slider = document.getElementById('timeline-slider');
@@ -47,11 +48,14 @@ const segmentTime = document.getElementById('segment-time');
 const segmentRule = document.getElementById('segment-rule');
 const loadFullBtn = document.getElementById('load-full');
 const showCrashBtn = document.getElementById('show-crash');
-const yokeGroup = document.getElementById('yoke-group');
+const yokeLocal = document.getElementById('yoke-local');
+const yokeForeign = document.getElementById('yoke-foreign');
 const eng1Fill = document.getElementById('eng1-fill');
 const eng2Fill = document.getElementById('eng2-fill');
 const eng1Value = document.getElementById('eng1-value');
 const eng2Value = document.getElementById('eng2-value');
+const eng1State = document.getElementById('eng1-state');
+const eng2State = document.getElementById('eng2-state');
 const rudderDot = document.getElementById('rudder-dot');
 
 function formatValue(value, digits, unit) {
@@ -96,6 +100,30 @@ function normalize(value, range) {
   return (value - mid) / (span / 2);
 }
 
+function setYokeTransform(element, rollNorm, pitchNorm) {
+  if (!element) return;
+  const translateX = rollNorm * 10;
+  const translateY = -pitchNorm * 10;
+  const rotate = rollNorm * 12;
+  element.style.setProperty('--yoke-x', `${translateX}px`);
+  element.style.setProperty('--yoke-y', `${translateY}px`);
+  element.style.setProperty('--yoke-rotate', `${rotate}deg`);
+}
+
+function setEngineState(element, value) {
+  if (!element) return;
+  const valueEl = element.querySelector('.state-value');
+  element.classList.remove('on', 'off', 'unknown');
+  if (!Number.isFinite(value)) {
+    valueEl.textContent = '—';
+    element.classList.add('unknown');
+    return;
+  }
+  const isOn = value >= ENGINE_ON_THRESHOLD;
+  valueEl.textContent = isOn ? 'ON' : 'OFF';
+  element.classList.add(isOn ? 'on' : 'off');
+}
+
 function updateReadouts(store, index) {
   Object.entries(FIELD_META).forEach(([key, meta]) => {
     const el = document.querySelector(`[data-field="${key}"]`);
@@ -113,31 +141,38 @@ function updateReadouts(store, index) {
 }
 
 function updateYoke(store, index) {
-  const aileron = store.aileron[index];
-  const elevator = store.elevator[index];
+  const wheelLocal = store.wheelLocal[index];
+  const columnLocal = store.columnLocal[index];
+  const wheelForeign = store.wheelForeign[index];
+  const columnForeign = store.columnForeign[index];
   const rudder = store.rudder[index];
   const eng1 = store.eng1N1[index];
   const eng2 = store.eng2N1[index];
 
-  const rollNorm = normalize(aileron, STATE.ranges.aileron || { min: -1, max: 1 });
-  const pitchNorm = normalize(elevator, STATE.ranges.elevator || { min: -1, max: 1 });
+  const rollLocalNorm = normalize(wheelLocal, STATE.ranges.wheelLocal || { min: -1, max: 1 });
+  const pitchLocalNorm = normalize(columnLocal, STATE.ranges.columnLocal || { min: -1, max: 1 });
+  const rollForeignNorm = normalize(wheelForeign, STATE.ranges.wheelForeign || { min: -1, max: 1 });
+  const pitchForeignNorm = normalize(columnForeign, STATE.ranges.columnForeign || { min: -1, max: 1 });
 
-  const translateX = rollNorm * 8;
-  const translateY = -pitchNorm * 8;
-  const rotate = rollNorm * 12;
-  yokeGroup.setAttribute(
-    'transform',
-    `translate(${translateX} ${translateY}) rotate(${rotate} 100 70)`
-  );
+  setYokeTransform(yokeLocal, rollLocalNorm, pitchLocalNorm);
+  setYokeTransform(yokeForeign, rollForeignNorm, pitchForeignNorm);
 
   if (Number.isFinite(eng1)) {
     eng1Fill.style.height = `${Math.min(Math.max(eng1, 0), 100)}%`;
     eng1Value.textContent = formatValue(eng1, 1, '%');
+  } else {
+    eng1Fill.style.height = '0%';
+    eng1Value.textContent = '—';
   }
   if (Number.isFinite(eng2)) {
     eng2Fill.style.height = `${Math.min(Math.max(eng2, 0), 100)}%`;
     eng2Value.textContent = formatValue(eng2, 1, '%');
+  } else {
+    eng2Fill.style.height = '0%';
+    eng2Value.textContent = '—';
   }
+  setEngineState(eng1State, eng1);
+  setEngineState(eng2State, eng2);
 
   const rudderRange = STATE.ranges.rudder || { min: -1, max: 1 };
   const rudderNorm = normalize(rudder, rudderRange);
@@ -176,6 +211,9 @@ function buildCharts(store) {
           borderColor: '#77c0ff',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
         {
           label: '滚转角 (Roll)',
@@ -183,6 +221,9 @@ function buildCharts(store) {
           borderColor: '#ffb84d',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
         {
           label: '航向 (Heading)',
@@ -190,6 +231,9 @@ function buildCharts(store) {
           borderColor: '#7fffd4',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
       ],
     },
@@ -226,6 +270,9 @@ function buildCharts(store) {
           borderColor: '#4ea3ff',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
         {
           label: '空速 (Airspeed)',
@@ -233,6 +280,9 @@ function buildCharts(store) {
           borderColor: '#a7f3d0',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
         {
           label: '垂向加速度 (Vert Accel)',
@@ -240,6 +290,9 @@ function buildCharts(store) {
           borderColor: '#f472b6',
           borderWidth: 1.5,
           pointRadius: 0,
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone',
+          spanGaps: true,
         },
       ],
     },
@@ -368,8 +421,10 @@ function parsePayload(payload) {
     roll: [],
     heading: [],
     accelVert: [],
-    aileron: [],
-    elevator: [],
+    wheelLocal: [],
+    wheelForeign: [],
+    columnLocal: [],
+    columnForeign: [],
     rudder: [],
     eng1N1: [],
     eng2N1: [],
@@ -389,8 +444,10 @@ function parsePayload(payload) {
     store.roll.push(row[index.roll]);
     store.heading.push(row[index.heading]);
     store.accelVert.push(row[index.accelVert]);
-    store.aileron.push(row[index.aileron]);
-    store.elevator.push(row[index.elevator]);
+    store.wheelLocal.push(row[index.wheelLocal]);
+    store.wheelForeign.push(row[index.wheelForeign]);
+    store.columnLocal.push(row[index.columnLocal]);
+    store.columnForeign.push(row[index.columnForeign]);
     store.rudder.push(row[index.rudder]);
     store.eng1N1.push(row[index.eng1N1]);
     store.eng2N1.push(row[index.eng2N1]);
@@ -410,7 +467,7 @@ function loadCrashSegment() {
       store.startTime = payload.meta.startTime;
       store.endTime = payload.meta.endTime;
       STATE.crashStore = store;
-      loadStatus.textContent = '已载入关键段 (默认播放)';
+      loadStatus.textContent = '已载入扩展关键段 (默认播放)';
       setStore(store);
       togglePlayback(true);
     })
@@ -435,8 +492,10 @@ function loadFullData() {
     roll: [],
     heading: [],
     accelVert: [],
-    aileron: [],
-    elevator: [],
+    wheelLocal: [],
+    wheelForeign: [],
+    columnLocal: [],
+    columnForeign: [],
     rudder: [],
     eng1N1: [],
     eng2N1: [],
@@ -472,8 +531,10 @@ function loadFullData() {
             roll: findColumn(['Roll Angle']),
             heading: findColumn(['Heading']),
             accelVert: findColumn(['Accel Vert']),
-            aileron: findColumn(['Aileron-L']),
-            elevator: findColumn(['Elevator-L']),
+            wheelLocal: findColumn(['Ctrl Whl Pos-L']),
+            wheelForeign: findColumn(['Ctrl Whl Pos-R']),
+            columnLocal: findColumn(['Ctrl Col Pos-L']),
+            columnForeign: findColumn(['Ctrl Col Pos-R']),
             rudder: findColumn(['Rudder']),
             eng1N1: findColumn(['Eng1 N1']),
             eng2N1: findColumn(['Eng2 N1']),
@@ -514,8 +575,10 @@ function loadFullData() {
       store.roll.push(parseColumnValue('roll'));
       store.heading.push(parseColumnValue('heading'));
       store.accelVert.push(parseColumnValue('accelVert'));
-      store.aileron.push(parseColumnValue('aileron'));
-      store.elevator.push(parseColumnValue('elevator'));
+      store.wheelLocal.push(parseColumnValue('wheelLocal'));
+      store.wheelForeign.push(parseColumnValue('wheelForeign'));
+      store.columnLocal.push(parseColumnValue('columnLocal'));
+      store.columnForeign.push(parseColumnValue('columnForeign'));
       store.rudder.push(parseColumnValue('rudder'));
       store.eng1N1.push(parseColumnValue('eng1N1'));
       store.eng2N1.push(parseColumnValue('eng2N1'));
