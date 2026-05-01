@@ -15,7 +15,7 @@ const META = {
   keySegment: null,
 };
 
-const COLUMN_NOT_FOUND_INDEX = -1;
+const MISSING_COLUMN_INDEX = -1;
 const PROGRESS_UPDATE_ROW_INTERVAL = 20000;
 
 const FIELD_META = {
@@ -458,18 +458,25 @@ function loadFullData() {
         const marker = row[0]?.trim().toLowerCase();
         if (marker === 'time') {
           header = row;
+          const findColumn = (names) => {
+            for (const name of names) {
+              const idx = header.indexOf(name);
+              if (idx !== -1) return idx;
+            }
+            return MISSING_COLUMN_INDEX;
+          };
           columnIndex = {
-            airspeed: header.indexOf('Airspeed Comp'),
-            altitude: header.indexOf('Altitude Press'),
-            pitch: header.indexOf('Pitch Angle'),
-            roll: header.indexOf('Roll Angle'),
-            heading: header.indexOf('Heading'),
-            accelVert: header.indexOf('Accel Vert'),
-            aileron: header.indexOf('Aileron-L'),
-            elevator: header.indexOf('Elevator-L'),
-            rudder: header.indexOf('Rudder'),
-            eng1N1: header.indexOf('Eng1 N1'),
-            eng2N1: header.indexOf('Eng2 N1'),
+            airspeed: findColumn(['Airspeed Comp']),
+            altitude: findColumn(['Altitude Press', 'Altitude Pressure']),
+            pitch: findColumn(['Pitch Angle']),
+            roll: findColumn(['Roll Angle']),
+            heading: findColumn(['Heading']),
+            accelVert: findColumn(['Accel Vert']),
+            aileron: findColumn(['Aileron-L']),
+            elevator: findColumn(['Elevator-L']),
+            rudder: findColumn(['Rudder']),
+            eng1N1: findColumn(['Eng1 N1']),
+            eng2N1: findColumn(['Eng2 N1']),
           };
         }
         return;
@@ -487,8 +494,8 @@ function loadFullData() {
       if (!Number.isFinite(time)) return;
 
       const parseColumnValue = (key) => {
-        const idx = columnIndex[key] ?? COLUMN_NOT_FOUND_INDEX;
-        if (idx === COLUMN_NOT_FOUND_INDEX || idx >= row.length) return null;
+        const idx = columnIndex[key];
+        if (idx === undefined || idx === null || idx < 0 || idx >= row.length) return null;
         const val = row[idx];
         if (val === '' || val === undefined) return null;
         const num = Number.parseFloat(val);
