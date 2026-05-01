@@ -15,7 +15,7 @@ const META = {
   keySegment: null,
 };
 
-const COLUMN_NOT_FOUND = -1;
+const COLUMN_NOT_FOUND_INDEX = -1;
 const PROGRESS_UPDATE_ROW_INTERVAL = 20000;
 
 const FIELD_META = {
@@ -486,9 +486,9 @@ function loadFullData() {
       const time = Number.parseFloat(row[0]);
       if (!Number.isFinite(time)) return;
 
-      const get = (key) => {
-        const idx = columnIndex[key] ?? COLUMN_NOT_FOUND;
-        if (idx === COLUMN_NOT_FOUND || idx >= row.length) return null;
+      const parseColumnValue = (key) => {
+        const idx = columnIndex[key] ?? COLUMN_NOT_FOUND_INDEX;
+        if (idx === COLUMN_NOT_FOUND_INDEX || idx >= row.length) return null;
         const val = row[idx];
         if (val === '' || val === undefined) return null;
         const num = Number.parseFloat(val);
@@ -501,17 +501,17 @@ function loadFullData() {
       }
       store.endTime = time;
       store.time.push(time);
-      store.airspeed.push(get('airspeed'));
-      store.altitude.push(get('altitude'));
-      store.pitch.push(get('pitch'));
-      store.roll.push(get('roll'));
-      store.heading.push(get('heading'));
-      store.accelVert.push(get('accelVert'));
-      store.aileron.push(get('aileron'));
-      store.elevator.push(get('elevator'));
-      store.rudder.push(get('rudder'));
-      store.eng1N1.push(get('eng1N1'));
-      store.eng2N1.push(get('eng2N1'));
+      store.airspeed.push(parseColumnValue('airspeed'));
+      store.altitude.push(parseColumnValue('altitude'));
+      store.pitch.push(parseColumnValue('pitch'));
+      store.roll.push(parseColumnValue('roll'));
+      store.heading.push(parseColumnValue('heading'));
+      store.accelVert.push(parseColumnValue('accelVert'));
+      store.aileron.push(parseColumnValue('aileron'));
+      store.elevator.push(parseColumnValue('elevator'));
+      store.rudder.push(parseColumnValue('rudder'));
+      store.eng1N1.push(parseColumnValue('eng1N1'));
+      store.eng2N1.push(parseColumnValue('eng2N1'));
 
       if (store.time.length % PROGRESS_UPDATE_ROW_INTERVAL === 0) {
         loadStatus.textContent = `正在解析全程CSV…已载入 ${store.time.length.toLocaleString()} 行`;
