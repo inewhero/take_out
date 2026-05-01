@@ -15,7 +15,8 @@ const META = {
   keySegment: null,
 };
 
-const PROGRESS_UPDATE_INTERVAL = 20000;
+const COLUMN_NOT_FOUND = -1;
+const PROGRESS_UPDATE_ROW_INTERVAL = 20000;
 
 const FIELD_META = {
   airspeed: { label: '空速', unit: 'kt', digits: 1 },
@@ -485,8 +486,8 @@ function loadFullData() {
       if (!Number.isFinite(time)) return;
 
       const get = (key) => {
-        const idx = columnIndex?.[key] ?? -1;
-        if (idx === -1 || idx >= row.length) return null;
+        const idx = columnIndex?.[key] ?? COLUMN_NOT_FOUND;
+        if (idx === COLUMN_NOT_FOUND || idx >= row.length) return null;
         const val = row[idx];
         if (val === '' || val === undefined) return null;
         const num = Number.parseFloat(val);
@@ -511,7 +512,7 @@ function loadFullData() {
       store.eng1N1.push(get('eng1N1'));
       store.eng2N1.push(get('eng2N1'));
 
-      if (store.time.length % PROGRESS_UPDATE_INTERVAL === 0) {
+      if (store.time.length % PROGRESS_UPDATE_ROW_INTERVAL === 0) {
         loadStatus.textContent = `正在解析全程CSV…已载入 ${store.time.length.toLocaleString()} 行`;
       }
     },
