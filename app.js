@@ -15,6 +15,8 @@ const META = {
   keySegment: null,
 };
 
+const PROGRESS_UPDATE_INTERVAL = 20000;
+
 const FIELD_META = {
   airspeed: { label: '空速', unit: 'kt', digits: 1 },
   altitude: { label: '气压高度', unit: 'ft', digits: 0 },
@@ -400,7 +402,7 @@ function loadCrashSegment() {
     .then((res) => res.json())
     .then((payload) => {
       META.keySegment = payload.meta;
-      segmentTime.textContent = `${payload.meta.startTime.toFixed(2)}s → ${payload.meta.endTime.toFixed(2)}s`;
+      segmentTime.textContent = `${payload.meta.startTime.toFixed(2)}s 至 ${payload.meta.endTime.toFixed(2)}s`;
       segmentRule.textContent = `判定依据: ${payload.meta.criteria}`;
       const store = parsePayload(payload);
       store.baseTime = payload.meta.baseTime;
@@ -509,7 +511,7 @@ function loadFullData() {
       store.eng1N1.push(get('eng1N1'));
       store.eng2N1.push(get('eng2N1'));
 
-      if (store.time.length % 20000 === 0) {
+      if (store.time.length % PROGRESS_UPDATE_INTERVAL === 0) {
         loadStatus.textContent = `正在解析全程CSV…已载入 ${store.time.length.toLocaleString()} 行`;
       }
     },
