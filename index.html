@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MU5735 Crash · FDR 数据可视化</title>
+    <title>FDR数据可视化 · B737-800</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,10 +19,10 @@
       <header class="hero">
         <div class="hero-text">
           <p class="eyebrow"><span lang="en">GitHub Pages · Flight Data Recorder (FDR)</span></p>
-          <h1>MU5735 Crash · FDR数据可视化</h1>
+          <h1>东航B737-800 · FDR数据可视化</h1>
           <p class="subtitle">
-            根据维基百科资料，中国东方航空 MU5735 航班于 2022 年 3 月 21 日在广西梧州附近坠毁。
-            本页汇总事故前后的 FDR 关键段数据，默认加载坠毁前数分钟的扩展片段，可拖动时间轴回放。
+            该页面聚焦飞行数据记录器（FDR）关键段，默认仅播放最终坠毁段，其他数据按需加载。
+            时间轴可拖动，支持自动播放与倍速。
           </p>
         </div>
         <div class="hero-card">
@@ -72,47 +72,31 @@
 
       <section class="dashboard">
         <div class="panel control-panel">
-          <h2>操纵量与驾驶盘（本地/外侧） <span lang="en">(Control & Yoke)</span></h2>
+          <h2>操纵量与驾驶盘 <span lang="en">(Control & Yoke)</span></h2>
           <div class="control-layout">
             <div class="yoke-block">
-              <div class="yoke-title">本地侧驾驶盘 (Local)</div>
-              <div class="yoke-photo-frame">
-                <div class="yoke-photo" id="yoke-local">
-                  <img
-                    src="https://github.com/user-attachments/assets/4cf6317a-3eb3-4fdb-9058-8deddd49e83f"
-                    alt="B737-800 yoke local"
-                  />
-                </div>
-              </div>
+              <svg class="yoke-svg" viewBox="0 0 200 200" aria-label="737-800 Yoke">
+                <g id="yoke-group">
+                  <circle class="yoke-ring" cx="100" cy="70" r="45" />
+                  <rect class="yoke-bar" x="55" y="67" width="90" height="6" rx="3" />
+                  <rect class="yoke-bar" x="97" y="70" width="6" height="55" rx="3" />
+                  <rect class="yoke-grip" x="80" y="95" width="40" height="12" rx="6" />
+                </g>
+                <rect class="yoke-column" x="92" y="125" width="16" height="50" rx="4" />
+                <rect class="yoke-base" x="60" y="175" width="80" height="18" rx="5" />
+              </svg>
               <div class="yoke-readouts">
                 <div class="readout">
-                  <span>驾驶盘滚转 (Wheel)</span>
-                  <strong data-control="wheelLocal">—</strong>
+                  <span>副翼 (Aileron)</span>
+                  <strong data-control="aileron">—</strong>
                 </div>
                 <div class="readout">
-                  <span>驾驶杆俯仰 (Column)</span>
-                  <strong data-control="columnLocal">—</strong>
-                </div>
-              </div>
-            </div>
-            <div class="yoke-block">
-              <div class="yoke-title">外侧驾驶盘 (Foreign)</div>
-              <div class="yoke-photo-frame">
-                <div class="yoke-photo mirror" id="yoke-foreign">
-                  <img
-                    src="https://github.com/user-attachments/assets/4cf6317a-3eb3-4fdb-9058-8deddd49e83f"
-                    alt="B737-800 yoke foreign"
-                  />
-                </div>
-              </div>
-              <div class="yoke-readouts">
-                <div class="readout">
-                  <span>驾驶盘滚转 (Wheel)</span>
-                  <strong data-control="wheelForeign">—</strong>
+                  <span>升降舵 (Elevator)</span>
+                  <strong data-control="elevator">—</strong>
                 </div>
                 <div class="readout">
-                  <span>驾驶杆俯仰 (Column)</span>
-                  <strong data-control="columnForeign">—</strong>
+                  <span>方向舵 (Rudder)</span>
+                  <strong data-control="rudder">—</strong>
                 </div>
               </div>
             </div>
@@ -135,16 +119,6 @@
                     <strong id="eng2-value">—</strong>
                   </div>
                 </div>
-                <div class="engine-status-grid">
-                  <div class="engine-state unknown" id="eng1-state">
-                    <span>ENG1 状态</span>
-                    <strong class="state-value">—</strong>
-                  </div>
-                  <div class="engine-state unknown" id="eng2-state">
-                    <span>ENG2 状态</span>
-                    <strong class="state-value">—</strong>
-                  </div>
-                </div>
               </div>
               <div class="rudder-indicator">
                 <span>方向舵偏置 (Rudder Trim)</span>
@@ -152,7 +126,6 @@
                   <div class="rudder-center"></div>
                   <div class="rudder-dot" id="rudder-dot"></div>
                 </div>
-                <strong class="rudder-value" data-control="rudder">—</strong>
               </div>
             </div>
           </div>
