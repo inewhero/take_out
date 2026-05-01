@@ -191,55 +191,44 @@ select {
 
 .control-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: minmax(200px, 1fr) minmax(220px, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: center;
 }
 
 .yoke-block {
   display: grid;
   gap: 12px;
   justify-items: center;
-  text-align: center;
 }
 
-.yoke-title {
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.yoke-photo-frame {
-  width: 100%;
-  max-width: 260px;
-  padding: 12px;
-  background: #0e141f;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.yoke-photo {
+.yoke-svg {
   width: 100%;
   max-width: 220px;
-  --yoke-x: 0px;
-  --yoke-y: 0px;
-  --yoke-rotate: 0deg;
-  --yoke-mirror: 1;
-  transform: translate(var(--yoke-x), var(--yoke-y)) rotate(var(--yoke-rotate))
-    scaleX(var(--yoke-mirror));
-  transform-origin: 50% 40%;
-  transition: transform 0.2s ease;
 }
 
-.yoke-photo img {
-  width: 100%;
-  display: block;
+.yoke-ring {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 6;
 }
 
-.yoke-photo.mirror {
-  --yoke-mirror: -1;
+.yoke-bar {
+  fill: var(--accent-strong);
+}
+
+.yoke-grip {
+  fill: #0b1018;
+  stroke: var(--accent-strong);
+  stroke-width: 2;
+}
+
+.yoke-column {
+  fill: #1a2433;
+}
+
+.yoke-base {
+  fill: #0f1724;
 }
 
 .yoke-readouts {
@@ -298,43 +287,6 @@ select {
   width: 100%;
   background: linear-gradient(180deg, var(--accent-strong), var(--accent));
   height: 0%;
-  transition: height 0.2s ease;
-}
-
-.engine-status-grid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
-  gap: 12px;
-}
-
-.engine-state {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #0e141f;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  display: grid;
-  gap: 6px;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.engine-state strong {
-  font-size: 1.2rem;
-  letter-spacing: 1px;
-}
-
-.engine-state.on {
-  color: #8bffc7;
-  background: rgba(74, 222, 128, 0.18);
-  border-color: rgba(74, 222, 128, 0.6);
-}
-
-.engine-state.off {
-  color: #ff9f9f;
-  background: rgba(248, 113, 113, 0.18);
-  border-color: rgba(248, 113, 113, 0.6);
 }
 
 .rudder-indicator {
@@ -369,11 +321,6 @@ select {
   border-radius: 50%;
   background: var(--danger);
   transform: translateX(-50%);
-}
-
-.rudder-value {
-  color: var(--text);
-  font-size: 0.95rem;
 }
 
 .readout-panel {
