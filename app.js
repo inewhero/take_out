@@ -455,7 +455,8 @@ function loadFullData() {
     step: (results) => {
       const row = results.data;
       if (!header) {
-        if (row[0] === 'Time') {
+        const marker = row[0]?.trim().toLowerCase();
+        if (marker === 'time') {
           header = row;
           columnIndex = {
             airspeed: header.indexOf('Airspeed Comp'),
@@ -486,7 +487,7 @@ function loadFullData() {
       if (!Number.isFinite(time)) return;
 
       const get = (key) => {
-        const idx = columnIndex?.[key] ?? COLUMN_NOT_FOUND;
+        const idx = columnIndex[key] ?? COLUMN_NOT_FOUND;
         if (idx === COLUMN_NOT_FOUND || idx >= row.length) return null;
         const val = row[idx];
         if (val === '' || val === undefined) return null;
