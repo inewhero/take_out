@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FDR数据可视化 · B737-800</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">GitHub Pages · Flight Data Recorder (FDR)</p>
+          <h1>东航B737-800 · FDR数据可视化</h1>
+          <p class="subtitle">
+            该页面聚焦飞行数据记录器（FDR）关键段，默认仅播放最终坠毁段，其他数据按需加载。
+            时间轴可拖动，支持自动播放与倍速。
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="hero-row">
+            <span>数据来源 (Source)</span>
+            <strong>NTSB DCA22WA102 / 本仓库原始附件</strong>
+          </div>
+          <div class="hero-row">
+            <span>关键段时间戳 (Crash Segment)</span>
+            <strong id="segment-time">—</strong>
+            <small id="segment-rule">—</small>
+          </div>
+          <div class="hero-row">
+            <span>加载状态</span>
+            <strong id="load-status">正在载入关键段…</strong>
+          </div>
+          <div class="hero-actions">
+            <button id="load-full" class="btn">加载全程数据</button>
+            <button id="show-crash" class="btn ghost">仅显示关键段</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="timeline-panel">
+        <div class="timeline-controls">
+          <button id="play-toggle" class="btn">播放</button>
+          <label class="speed">
+            倍速 (Speed)
+            <select id="speed-select">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </label>
+          <div class="time-readout">
+            <div id="time-main">T+00:00.0</div>
+            <div id="time-sub">原始秒数: —</div>
+          </div>
+        </div>
+        <input id="timeline-slider" type="range" min="0" max="100" value="0" step="0.1" />
+        <div class="timeline-hints">
+          <span id="timeline-start">—</span>
+          <span id="timeline-end">—</span>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="panel control-panel">
+          <h2>操纵量与驾驶盘 (Control & Yoke)</h2>
+          <div class="control-layout">
+            <div class="yoke-block">
+              <svg class="yoke-svg" viewBox="0 0 200 200" aria-label="737-800 Yoke">
+                <g id="yoke-group">
+                  <circle class="yoke-ring" cx="100" cy="70" r="45" />
+                  <rect class="yoke-bar" x="55" y="67" width="90" height="6" rx="3" />
+                  <rect class="yoke-bar" x="97" y="70" width="6" height="55" rx="3" />
+                  <rect class="yoke-grip" x="80" y="95" width="40" height="12" rx="6" />
+                </g>
+                <rect class="yoke-column" x="92" y="125" width="16" height="50" rx="4" />
+                <rect class="yoke-base" x="60" y="175" width="80" height="18" rx="5" />
+              </svg>
+              <div class="yoke-readouts">
+                <div class="readout">
+                  <span>副翼 (Aileron)</span>
+                  <strong data-control="aileron">—</strong>
+                </div>
+                <div class="readout">
+                  <span>升降舵 (Elevator)</span>
+                  <strong data-control="elevator">—</strong>
+                </div>
+                <div class="readout">
+                  <span>方向舵 (Rudder)</span>
+                  <strong data-control="rudder">—</strong>
+                </div>
+              </div>
+            </div>
+            <div class="throttle-block">
+              <div class="throttle">
+                <div class="throttle-label">油门 (Throttle)</div>
+                <div class="throttle-levers">
+                  <div class="lever">
+                    <span class="engine">ENG1 N1</span>
+                    <div class="lever-track">
+                      <div class="lever-fill" id="eng1-fill"></div>
+                    </div>
+                    <strong id="eng1-value">—</strong>
+                  </div>
+                  <div class="lever">
+                    <span class="engine">ENG2 N1</span>
+                    <div class="lever-track">
+                      <div class="lever-fill" id="eng2-fill"></div>
+                    </div>
+                    <strong id="eng2-value">—</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="rudder-indicator">
+                <span>方向舵偏置 (Rudder Trim)</span>
+                <div class="rudder-track">
+                  <div class="rudder-center"></div>
+                  <div class="rudder-dot" id="rudder-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel readout-panel">
+          <h2>姿态与性能读数 (Attitude & Performance)</h2>
+          <div class="readout-grid">
+            <div class="metric">
+              <span>气压高度 (Pressure Altitude)</span>
+              <strong data-field="altitude">—</strong>
+            </div>
+            <div class="metric">
+              <span>空速 (Airspeed)</span>
+              <strong data-field="airspeed">—</strong>
+            </div>
+            <div class="metric">
+              <span>俯仰角 (Pitch)</span>
+              <strong data-field="pitch">—</strong>
+            </div>
+            <div class="metric">
+              <span>滚转角 (Roll)</span>
+              <strong data-field="roll">—</strong>
+            </div>
+            <div class="metric">
+              <span>航向 (Heading)</span>
+              <strong data-field="heading">—</strong>
+            </div>
+            <div class="metric">
+              <span>垂向加速度 (Vert Accel)</span>
+              <strong data-field="accelVert">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel chart-panel">
+          <h2>飞机姿态折线图 (Flight Attitude Charts)</h2>
+          <canvas id="attitude-chart" height="220"></canvas>
+        </div>
+        <div class="panel chart-panel">
+          <h2>性能参数折线图 (Performance Charts)</h2>
+          <canvas id="performance-chart" height="220"></canvas>
+        </div>
+      </section>
+
+      <section class="panel downloads">
+        <h2>报告与附件下载 (Downloads)</h2>
+        <p class="download-note">
+          文件来源：本仓库内的官方报告与原始FDR附件。点击按钮即可下载。
+        </p>
+        <div class="download-grid">
+          <a class="download-btn" href="report.pdf" download>事故报告 PDF (report.pdf)</a>
+          <a class="download-btn" href="letter.txt" download>说明信件 TXT (letter.txt)</a>
+          <a class="download-btn" href="ExactSample.csv" download>FDR数据 CSV (ExactSample.csv)</a>
+          <a class="download-btn" href="TableResolution.csv" download>参数解析表 CSV (TableResolution.csv)</a>
+          <a class="download-btn" href="12minute.upk" download>原始数据包 UPK (12minute.upk)</a>
+        </div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
